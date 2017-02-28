@@ -1,3 +1,4 @@
+require 'yaml/store'
 require 'sinatra'
 
 Choices = {
@@ -12,13 +13,21 @@ get '/' do
 	erb :index
 end
 
-post '.cast' do
+post '/cast' do
 	@title = 'Thanks for casting your vote!'
 	@vote = params['vote']
+	@store = YAML::Store.new 'votes.yml'
+	@store.transaction do
+		@store['votes'] ||= {}
+		@store['votes'][@vote] ||= 0
+		@store['votes'][@vote] += 1
+	end
 	erb :cast
 end
 
 get '/results' do
-  @votes = { 'HAM' => 7, 'PIZ' => 5, 'CUR' => 3 }
-  erb :results
+	@title = 'Results so far:'
+	@store = YAML::Store.new 'votes.yml'
+  	@votes = @store.transaction { @store['votes'] }
+  	erb :results
 end
